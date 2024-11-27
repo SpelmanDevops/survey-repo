@@ -20,22 +20,31 @@ jobs:
       with: 
         terraform_version: 1.5.0
 
-    # Step 3: Initialise Terraform
+    # Step 3: Login to azure   
+    - name: Export Azure Credentials
+      env:
+        ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+        ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+        ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+        ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+      run: echo "Azure credentials exported"
+
+    # Step 4: Initialise Terraform
     - name: Terraform Init 
       run: terraform -chdir=./iac init
 
-    # Step 4: Apply Terraform
+    # Step 5: Apply Terraform
     - name: Terraform Apply 
       run: terraform -chdir=./iac apply -auto-approve
 
-    # Step 5: Build Frontend
+    # Step 6: Build Frontend
     - name: Build Frontend
       run: |
         cd frontend
         npm install
         npm run build
 
-    # Step 6: Deploy Frontend
+    # Step 7: Deploy Frontend
     - name: Deploy Frontend
       uses: Azure/static-web-apps-deploy@v1
       with:
@@ -43,7 +52,7 @@ jobs:
         app_location: "frontend/"
         output_location: "build/"
 
-    # Step 7: Deploy Backend
+    # Step 8: Deploy Backend
     - name: Deploy Backend
       uses: azure/functions-action@v1
       with:
@@ -51,7 +60,7 @@ jobs:
         package: ./backend
         publish-profile: ${{ secrets.AZURE_FUNCTION_APP_PUBLISH_PROFILE }}
 
-    # Step 8: Post-Deployment Testing
+    # Step 9: Post-Deployment Testing
     - name: Test Backend
       run: |
         curl -X POST https://<function-app-url>/api/survey \
