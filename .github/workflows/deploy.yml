@@ -1,0 +1,60 @@
+name: Deploy to Azure 
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Step 1: Checkout the Code
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    # Step 2: Setup Terraform
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+      with: 
+        terraform_version: 1.5.0
+
+    # Step 3: Initialise Terraform
+    - name: Terraform Init 
+      run: terraform -chdir=./iac init
+
+    # Step 4: Apply Terraform
+    - name: Terraform Apply 
+      run: terraform -chdir=./iac apply -auto-approve
+
+    # Step 5: Build Frontend
+    - name: Build Frontend
+      run: |
+        cd frontend
+        npm install
+        npm run build
+
+    # Step 6: Deploy Frontend
+    - name: Deploy Frontend
+      uses: Azure/static-web-apps-deploy@v1
+      with:
+        azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+        app_location: "frontend/"
+        output_location: "build/"
+
+    # Step 7: Deploy Backend
+    - name: Deploy Backend
+      uses: azure/functions-action@v1
+      with:
+        app-name: survey-backend
+        package: ./backend
+        publish-profile: ${{ secrets.AZURE_FUNCTION_APP_PUBLISH_PROFILE }}
+
+    # Step 8: Post-Deployment Testing
+    - name: Test Backend
+      run: |
+        curl -X POST https://<function-app-url>/api/survey \
+        -H "Content-Type: application/json" \
+        -d '{"response":"Test Response"}'
+      
