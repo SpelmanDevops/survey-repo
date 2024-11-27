@@ -5,7 +5,13 @@ provider "azurerm" {
 
 resource "azurerm_resource_group" "main" {
   name     = "survey-rg"
-  location = "East US"
+  location = "UKSouth"
+}
+
+resource "random_string" "suffix" {
+  length  = 6
+  upper   = false
+  special = false
 }
 
 resource "azurerm_storage_account" "static_web" {
@@ -43,10 +49,6 @@ resource "azurerm_linux_function_app" "backend" {
       python_version = "3.9"
     }
   }
-}
 
-resource "random_string" "suffix" {
-  length  = 6
-  upper   = false
-  special = false
+  depends_on = [azurerm_storage_account.static_web]
 }
